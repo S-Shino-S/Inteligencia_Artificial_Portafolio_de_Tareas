@@ -1,0 +1,130 @@
+import re
+
+# --- BASE DE CONOCIMIENTO (Equivalente al YAML) ---
+KB = {
+    "facts": [
+        "Estudiante(Ana)", "Estudiante(Luis)", "Profesor(Marta)",
+        "TieneCredencial(Ana)", "TieneCredencial(Marta)", "HorarioNocturno(Hoy)"
+    ],
+    "rules": {
+        "R_miembro_est": {"head": "Miembro(x)", "body": ["Estudiante(x)", "TieneCredencial(x)"]},
+        "R_miembro_prof": {"head": "Miembro(x)", "body": ["Profesor(x)"]},
+        "R_acceso": {"head": "AccesoNoche(x)", "body": ["Miembro(x)", "HorarioNocturno(Hoy)"]},
+        "R_beca": {"head": "Becario(x)", "body": ["Estudiante(x)", "TieneCredencial(x)"]}
+    }
+}
+
+# --- MOTOR DE UNIFICACIÓN BÁSICO ---
+def parse_atom(atom_str):
+    match = re.match(r"(\w+)\(([^)]+)\)", atom_str)
+    return match.group(1), match.group(2)
+
+def is_var(term):
+    return term[0].islower()
+
+def unify(atom1, atom2, theta):
+    pred1, arg1 = parse_atom(atom1)
+    pred2, arg2 = parse_atom(atom2)
+    if pred1 != pred2: return None
+    
+    theta = theta.copy()
+    if is_var(arg1):
+        if arg1 in theta and theta[arg1] != arg2: return None
+        theta[arg1] = arg2
+    elif is_var(arg2):
+        if arg2 in theta and theta[arg2] != arg1: return None
+        theta[arg2] = arg1
+    elif arg1 != arg2:
+        return None
+    return theta
+
+def apply_theta(atom_str, theta):
+    pred, arg = parse_atom(atom_str)
+    return f"{pred}({theta.get(arg, arg)})"
+
+# --- ENCADENAMIENTO HACIA ADELANTE ---
+def forward_chaining(kb, queries):
+    print("--- ENCADENAMIENTO HACIA ADELANTE ---")
+    facts = list(kb["facts"])
+    rules = kb["rules"]
+    derived_total = []
+    
+    ronda = 1
+    while True:
+        new_in_round = []
+        # Evaluar reglas con los hechos disponibles AL INICIO de la ronda
+        for rule_id, rule in rules.items():
+            head = rule["head"]
+            body = rule["body"]
+            
+            # Buscar combinaciones que satisfagan el cuerpo
+            def match_body(conditions, current_theta):
+                if not conditions:
+                    yield current_theta
+                    return
+                for fact in facts:
+                    theta = unify(conditions[0], fact, current_theta)
+                    if theta is not None:
+                        yield from match_body(conditions[1:], theta)
+                        
+            for theta in match_body(body, {}):
+                new_fact = apply_theta(head, theta)
+                if new_fact not in facts and new_fact not in new_in_round:
+                    new_in_round.append(new_fact)
+                    
+        if not new_in_round:
+            break
+            
+        print(f"Ronda {ronda} deriva: {new_in_round}")
+        derived_total.extend(new_in_round)
+        facts.extend(new_in_round)
+        ronda += 1
+        
+    print(f"Átomos nuevos totales en orden: {derived_total}")
+    for q in queries:
+        probada = q in facts
+        print(f"Consulta {q}: {'PROBADA (Sí)' if probada else 'NO PROBADA (No)'}")
+    print("\n")
+
+# --- ENCADENAMIENTO HACIA ATRÁS ---
+def backward_chaining(kb, queries):
+    print("--- ENCADENAMIENTO HACIA ATRÁS ---")
+    facts = kb["facts"]
+    rules = kb["rules"]
+    
+    def bc_ask(goal, stack, indent=""):
+        if goal in stack:
+            return False # Evitar ciclos
+            
+        print(f"{indent}Meta: {goal}")
+        
+        # 1. Probar hechos
+        if goal in facts:
+            print(f"{indent}  -> Es un hecho.")
+            return True
+            
+        # 2. Probar reglas
+        for rule_id, rule in rules.items():
+            head_raw = rule["head"]
+            theta = unify(goal, head_raw, {})
+            if theta is not None:
+                print(f"{indent}  -> Unifica con {rule_id}. Submetas: {[apply_theta(b, theta) for b in rule['body']]}")
+                all_body_true = True
+                for b in rule["body"]:
+                    subgoal = apply_theta(b, theta)
+                    if not bc_ask(subgoal, stack + [goal], indent + "    "):
+                        all_body_true = False
+                        break
+                if all_body_true:
+                    return True
+        return False
+
+    for q in queries:
+        print(f"Iniciando consulta: {q}")
+        resultado = bc_ask(q, [])
+        print(f"Resultado {q}: {'PROBADA (Sí)' if resultado else 'NO PROBADA (No)'}\n")
+
+# --- EJECUCIÓN ---
+consultas = ["AccesoNoche(Ana)", "AccesoNoche(Luis)", "AccesoNoche(Marta)"]
+forward_chaining(KB, consultas)
+backward_chaining(KB, consultas)
