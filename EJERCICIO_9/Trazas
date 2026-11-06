@@ -1,0 +1,47 @@
+--- ENCADENAMIENTO HACIA ADELANTE ---
+Ronda 1 deriva: ['Miembro(Ana)', 'Miembro(Marta)', 'Becario(Ana)']
+Ronda 2 deriva: ['AccesoNoche(Ana)', 'AccesoNoche(Marta)']
+Átomos nuevos totales en orden: ['Miembro(Ana)', 'Miembro(Marta)', 'Becario(Ana)', 'AccesoNoche(Ana)', 'AccesoNoche(Marta)']
+Consulta AccesoNoche(Ana): PROBADA (Sí)
+Consulta AccesoNoche(Luis): NO PROBADA (No)
+Consulta AccesoNoche(Marta): PROBADA (Sí)
+
+
+--- ENCADENAMIENTO HACIA ATRÁS ---
+Iniciando consulta: AccesoNoche(Ana)
+Meta: AccesoNoche(Ana)
+  -> Unifica con R_acceso. Submetas: ['Miembro(Ana)', 'HorarioNocturno(Hoy)']
+    Meta: Miembro(Ana)
+      -> Unifica con R_miembro_est. Submetas: ['Estudiante(Ana)', 'TieneCredencial(Ana)']
+        Meta: Estudiante(Ana)
+          -> Es un hecho.
+        Meta: TieneCredencial(Ana)
+          -> Es un hecho.
+    Meta: HorarioNocturno(Hoy)
+      -> Es un hecho.
+Resultado AccesoNoche(Ana): PROBADA (Sí)
+
+Iniciando consulta: AccesoNoche(Luis)
+Meta: AccesoNoche(Luis)
+  -> Unifica con R_acceso. Submetas: ['Miembro(Luis)', 'HorarioNocturno(Hoy)']
+    Meta: Miembro(Luis)
+      -> Unifica con R_miembro_est. Submetas: ['Estudiante(Luis)', 'TieneCredencial(Luis)']
+        Meta: Estudiante(Luis)
+          -> Es un hecho.
+        Meta: TieneCredencial(Luis)
+      -> Unifica con R_miembro_prof. Submetas: ['Profesor(Luis)']
+        Meta: Profesor(Luis)
+Resultado AccesoNoche(Luis): NO PROBADA (No)
+
+Iniciando consulta: AccesoNoche(Marta)
+Meta: AccesoNoche(Marta)
+  -> Unifica con R_acceso. Submetas: ['Miembro(Marta)', 'HorarioNocturno(Hoy)']
+    Meta: Miembro(Marta)
+      -> Unifica con R_miembro_est. Submetas: ['Estudiante(Marta)', 'TieneCredencial(Marta)']
+        Meta: Estudiante(Marta)
+      -> Unifica con R_miembro_prof. Submetas: ['Profesor(Marta)']
+        Meta: Profesor(Marta)
+          -> Es un hecho.
+    Meta: HorarioNocturno(Hoy)
+      -> Es un hecho.
+Resultado AccesoNoche(Marta): PROBADA (Sí)
